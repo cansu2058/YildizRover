@@ -1,0 +1,69 @@
+import cv2
+import os
+from google.colab import drive
+from google.colab.patches import cv2_imshow
+
+drive.mount('/content/drive')
+
+dataset_path = "/content/drive/MyDrive/stop_sign_data_set"
+
+print(os.listdir(dataset_path))
+
+image_path = dataset_path + "/premium_photo-1731192705955-f10a8e7174d2.jpg"
+image = cv2.imread(image_path)
+cv2_imshow(image)
+
+hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+cv2_imshow(hsv)
+
+b, g, r = cv2.split(image)
+
+red_mask = (
+    (r > g * 1.3) &
+    (r > b * 1.3) &
+    (r > 60)
+)
+
+red_mask = red_mask.astype("uint8") * 255
+cv2_imshow(red_mask)
+
+contours, _ = cv2.findContours(
+    red_mask,
+    cv2.RETR_EXTERNAL,
+    cv2.CHAIN_APPROX_SIMPLE
+)
+
+largest_contour = max(contours, key=cv2.contourArea)
+
+x, y, w, h = cv2.boundingRect(largest_contour)
+
+result = image.copy()
+
+cv2.rectangle(
+    result,
+    (x, y),
+    (x + w, y + h),
+    (0, 0, 255),
+    3
+)
+
+cv2_imshow(result)
+
+center_x = x + w // 2
+center_y = y + h // 2
+
+print("STOP merkezi:", center_x, center_y)
+
+cv2.circle(
+    result,
+    (center_x, center_y),
+    6,
+    (0, 255, 0),   # yeşil
+    -1
+)
+
+cv2_imshow(result)
+
+output_folder = "/content/drive/MyDrive/stop_sign_outputs"
+os.makedirs(output_folder, exist_ok=True)
+
